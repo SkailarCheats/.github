@@ -1,0 +1,38 @@
+name: Global Pull Request Notification
+
+on:
+  workflow_call:
+    secrets:
+      DISCORD_PR:
+        required: true
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment PR
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            The Skailar owner has been notified of your pull request. Please wait for him to review it. This could take several days.
+
+      - name: Discord Notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_PR }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK" ]
+          then
+            echo "DISCORD_WEBHOOK secret not found"
+            exit 1
+          fi
+          curl -H "Content-Type: application/json" -X POST -d '{
+            "content": "<@1138519014734319706> https://github.com/${{ github.event.pull_request.user.login }} made a pull request",
+            "embeds": [
+              {
+                "title": "New Pull Request",
+                "description": "${{ github.event.pull_request.title }}",
+                "url": "${{ github.event.pull_request.html_url }}",
+                "color": 3066993
+              }
+            ]
+          }' "$DISCORD_WEBHOOK"
